@@ -1,25 +1,62 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Expense, Member, Currency } from '@/types';
 import { MEMBERS, CURRENCIES, CATEGORIES } from '@/config';
 
 interface ExpenseFormProps {
   onAddExpense: (expense: Expense) => void;
+  defaultPaidBy: Member;
 }
 
-export default function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
+export default function ExpenseForm({ onAddExpense, defaultPaidBy }: ExpenseFormProps) {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState<Currency>('NIS');
-  const [paidBy, setPaidBy] = useState<Member>('Bloch');
+  const [currency, setCurrency] = useState<Currency>('EUR');
+  const [paidBy, setPaidBy] = useState<Member>(defaultPaidBy);
   const [category, setCategory] = useState(CATEGORIES[0]);
+  const [customCategory, setCustomCategory] = useState('');
   const [splitType, setSplitType] = useState<'equal' | 'custom'>('equal');
+  const [selectedMembers, setSelectedMembers] = useState<Set<Member>>(new Set(MEMBERS));
   const [customSplits, setCustomSplits] = useState<Record<Member, string>>({
     Bloch: '',
     Adji: '',
     Razi: '',
   });
+
+  useEffect(() => {
+    setPaidBy(defaultPaidBy);
+  }, [defaultPaidBy]);
+
+  useEffect(() => {
+    if (splitType === 'custom' && amount) {
+      const amountNum = parseFloat(amount);
+      if (!isNaN(amountNum) && selectedMembers.size > 0) {
+        const splitAmount = (amountNum / selectedMembers.size).toFixed(2);
+        const newSplits: Record<Member, string> = {
+          Bloch: '',
+          Adji: '',
+          Razi: '',
+        };
+        selectedMembers.forEach(member => {
+          newSplits[member] = splitAmount;
+        });
+        setCustomSplits(newSplits);
+      }
+    }
+  }, [splitType, selectedMembers, amount]);
+
+  const toggleMember = (member: Member) => {
+    const newSelected = new Set(selectedMembers);
+    if (newSelected.has(member)) {
+      if (newSelected.size > 1) {
+        newSelected.delete(member);
+      }
+    } else {
+      newSelected.add(member);
+    }
+    setSelectedMembers(newSelected);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +66,8 @@ export default function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
       alert('Please fill in all fields correctly');
       return;
     }
+
+    const finalCategory = category === 'Other' && customCategory ? customCategory : category;
 
     let splits: Record<Member, number>;
     
@@ -61,14 +100,19 @@ export default function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
       currency,
       paid_by: paidBy,
       splits,
-      category,
+      category: finalCategory,
     };
 
     onAddExpense(expense);
     
     setDescription('');
     setAmount('');
+    setCustomCategory('');
+    setCategory(CATEGORIES[0]);
+    setSplitType('equal');
+    setSelectedMembers(new Set(MEMBERS));
     setCustomSplits({ Bloch: '', Adji: '', Razi: '' });
+    setPaidBy(defaultPaidBy);
   };
 
   return (
@@ -106,6 +150,21 @@ export default function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
             ))}
           </select>
         </div>
+
+        {category === 'Other' && (
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Custom Category
+            </label>
+            <input
+              type="text"
+              value={customCategory}
+              onChange={(e) => setCustomCategory(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+              placeholder="Enter custom category"
+            />
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -161,29 +220,65 @@ export default function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
             onChange={(e) => setSplitType(e.target.value as 'equal' | 'custom')}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
           >
-            <option value="equal">Equal Split</option>
+            <option value="equal">Equal Split (All Members)</option>
             <option value="custom">Custom Split</option>
           </select>
         </div>
       </div>
 
       {splitType === 'custom' && (
-        <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-md">
-          {MEMBERS.map((member) => (
-            <div key={member}>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {member}
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={customSplits[member]}
-                onChange={(e) => setCustomSplits({ ...customSplits, [member]: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
-                placeholder="0.00"
-              />
+        <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-md space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Select Members to Split Between
+            </label>
+            <div className="flex gap-3">
+              {MEMBERS.map((member) => (
+                <label
+                  key={member}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md cursor-pointer transition-colors ${
+                    selectedMembers.has(member)
+                      ? 'bg-indigo-100 dark:bg-indigo-900/30 border-2 border-indigo-500'
+                      : 'bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedMembers.has(member)}
+                    onChange={() => toggleMember(member)}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-gray-800 dark:text-gray-200">{member}</span>
+                </label>
+              ))}
             </div>
-          ))}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Split Amounts (auto-calculated, you can adjust)
+            </label>
+            <div className="grid grid-cols-3 gap-4">
+              {MEMBERS.map((member) => (
+                <div key={member}>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {member}
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={customSplits[member]}
+                    onChange={(e) => setCustomSplits({ ...customSplits, [member]: e.target.value })}
+                    disabled={!selectedMembers.has(member)}
+                    className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white ${
+                      !selectedMembers.has(member) ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    placeholder="0.00"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 

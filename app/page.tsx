@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Expense, Settlement, Balance, SimplifiedDebt } from '@/types';
+import { useRouter } from 'next/navigation';
+import { Expense, Settlement, Balance, SimplifiedDebt, Member } from '@/types';
 import { calculateBalances, simplifyDebts, formatNIS } from '@/lib/utils';
 import ExpenseForm from '@/components/ExpenseForm';
 import ExpenseList from '@/components/ExpenseList';
@@ -11,13 +12,23 @@ import SettlementForm from '@/components/SettlementForm';
 import SettlementList from '@/components/SettlementList';
 
 export default function Home() {
+  const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<Member | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [balances, setBalances] = useState<Balance[]>([]);
   const [debts, setDebts] = useState<SimplifiedDebt[]>([]);
   const [activeTab, setActiveTab] = useState<'expenses' | 'settlements' | 'summary'>('expenses');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const user = localStorage.getItem('currentUser');
+    if (!user) {
+      router.push('/landing');
+      return;
+    }
+    setCurrentUser(user as Member);
+    
     const storedExpenses = localStorage.getItem('expenses');
     const storedSettlements = localStorage.getItem('settlements');
     
@@ -27,7 +38,9 @@ export default function Home() {
     if (storedSettlements) {
       setSettlements(JSON.parse(storedSettlements));
     }
-  }, []);
+    
+    setIsLoading(false);
+  }, [router]);
 
   useEffect(() => {
     localStorage.setItem('expenses', JSON.stringify(expenses));
@@ -56,6 +69,19 @@ export default function Home() {
     setSettlements(settlements.filter(s => s.id !== id));
   };
 
+  const handleChangeUser = () => {
+    localStorage.removeItem('currentUser');
+    router.push('/landing');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+        <div className="text-2xl text-gray-600 dark:text-gray-400">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -66,6 +92,16 @@ export default function Home() {
           <p className="text-gray-600 dark:text-gray-400">
             Expense Tracker & Split Calculator
           </p>
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <span className="text-gray-600 dark:text-gray-400">Logged in as:</span>
+            <span className="font-semibold text-indigo-600 dark:text-indigo-400">{currentUser}</span>
+            <button
+              onClick={handleChangeUser}
+              className="ml-2 text-sm text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 underline"
+            >
+              Change
+            </button>
+          </div>
         </header>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
@@ -104,7 +140,7 @@ export default function Home() {
 
           {activeTab === 'expenses' && (
             <div>
-              <ExpenseForm onAddExpense={addExpense} />
+              <ExpenseForm onAddExpense={addExpense} defaultPaidBy={currentUser!} />
               <ExpenseList expenses={expenses} onDeleteExpense={deleteExpense} />
             </div>
           )}
