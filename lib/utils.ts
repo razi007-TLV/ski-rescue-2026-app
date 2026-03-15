@@ -15,6 +15,17 @@ export function formatNIS(amount: number): string {
   return `₪${amount.toFixed(2)}`;
 }
 
+export function fromNIS(amountInNIS: number, targetCurrency: string): number {
+  const rate = EXCHANGE_RATES[targetCurrency as keyof typeof EXCHANGE_RATES] || 1;
+  return amountInNIS / rate;
+}
+
+export function formatAmount(amountInNIS: number, displayCurrency: string): string {
+  const converted = fromNIS(amountInNIS, displayCurrency);
+  const symbol = displayCurrency === 'NIS' ? '₪' : displayCurrency === 'USD' ? '$' : '€';
+  return `${symbol}${converted.toFixed(2)}`;
+}
+
 export function calculateBalances(
   expenses: Expense[],
   settlements: Settlement[]
@@ -23,6 +34,7 @@ export function calculateBalances(
     Bloch: { paid: 0, owes: 0 },
     Adji: { paid: 0, owes: 0 },
     Razi: { paid: 0, owes: 0 },
+    Kalish: { paid: 0, owes: 0 },
   };
 
   expenses.forEach((expense) => {

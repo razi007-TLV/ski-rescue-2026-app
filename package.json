@@ -5,23 +5,26 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:test": "npm run test:ci && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
+    "test:ci": "jest --ci --forceExit --no-coverage",
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.99.1",
     "next": "^15.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
     "@types/jest": "^29.5.12",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.6",
     "@types/react-dom": "^19.0.2",
-    "@testing-library/react": "^16.1.0",
-    "@testing-library/jest-dom": "^6.6.3",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.18.0",
     "eslint-config-next": "^15.1.6",

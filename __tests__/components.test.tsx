@@ -8,7 +8,7 @@ import { Expense, Balance, SimplifiedDebt } from '@/types';
 describe('ExpenseForm', () => {
   it('should render the form', () => {
     const mockOnAddExpense = jest.fn();
-    render(<ExpenseForm onAddExpense={mockOnAddExpense} />);
+    render(<ExpenseForm onAddExpense={mockOnAddExpense} defaultPaidBy="Bloch" />);
     
     expect(screen.getByText('Add New Expense')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('e.g., Ski lift tickets')).toBeInTheDocument();
@@ -16,7 +16,7 @@ describe('ExpenseForm', () => {
 
   it('should call onAddExpense when form is submitted', () => {
     const mockOnAddExpense = jest.fn();
-    render(<ExpenseForm onAddExpense={mockOnAddExpense} />);
+    render(<ExpenseForm onAddExpense={mockOnAddExpense} defaultPaidBy="Bloch" />);
     
     fireEvent.change(screen.getByPlaceholderText('e.g., Ski lift tickets'), {
       target: { value: 'Test Expense' },
@@ -46,7 +46,7 @@ describe('ExpenseList', () => {
       amount: 300,
       currency: 'NIS',
       paid_by: 'Bloch',
-      splits: { Bloch: 100, Adji: 100, Razi: 100 },
+      splits: { Bloch: 100, Adji: 100, Razi: 100, Kalish: 100 },
       category: 'Food & Dining',
     },
   ];
@@ -82,6 +82,7 @@ describe('BalancesSummary', () => {
     { member: 'Bloch', paid: 300, owes: 100, net: 200 },
     { member: 'Adji', paid: 0, owes: 100, net: -100 },
     { member: 'Razi', paid: 0, owes: 100, net: -100 },
+    { member: 'Kalish', paid: 0, owes: 100, net: -100 },
   ];
 
   it('should render balances for all members', () => {
@@ -90,6 +91,7 @@ describe('BalancesSummary', () => {
     expect(screen.getByText('Bloch')).toBeInTheDocument();
     expect(screen.getByText('Adji')).toBeInTheDocument();
     expect(screen.getByText('Razi')).toBeInTheDocument();
+    expect(screen.getByText('Kalish')).toBeInTheDocument();
   });
 
   it('should display positive net balance in green', () => {
@@ -102,7 +104,7 @@ describe('BalancesSummary', () => {
   it('should display negative net balance in red', () => {
     render(<BalancesSummary balances={mockBalances} />);
     
-    const adjiNets = screen.getAllByText('-₪100.00');
+    const adjiNets = screen.getAllByText('₪-100.00');
     adjiNets.forEach(net => {
       expect(net).toHaveClass('text-red-600');
     });
@@ -115,16 +117,24 @@ describe('SettlementSuggestions', () => {
     { from: 'Razi', to: 'Bloch', amount: 100 },
   ];
 
-  it('should render settlement suggestions', () => {
-    render(<SettlementSuggestions debts={mockDebts} />);
-    
-    expect(screen.getByText(/Adji.*should pay.*Bloch/)).toBeInTheDocument();
-    expect(screen.getByText(/Razi.*should pay.*Bloch/)).toBeInTheDocument();
+  it('should render settlement suggestions with personalized view', () => {
+    render(<SettlementSuggestions debts={mockDebts} currentUser="Razi" />);
+
+    expect(screen.getByText('Adji', { selector: 'span' })).toBeInTheDocument();
+    expect(screen.getAllByText('pays', { selector: 'span' })).toHaveLength(2);
+    expect(screen.getByText('You owe')).toBeInTheDocument();
+    expect(screen.getAllByText('₪100.00')).toHaveLength(3);
+  });
+
+  it('should separate user debts from others', () => {
+    render(<SettlementSuggestions debts={mockDebts} currentUser="Razi" />);
+
+    expect(screen.getByText('Your settlements')).toBeInTheDocument();
   });
 
   it('should show settled message when no debts', () => {
-    render(<SettlementSuggestions debts={[]} />);
+    render(<SettlementSuggestions debts={[]} currentUser="Bloch" />);
     
-    expect(screen.getByText(/All settled up! No outstanding debts/)).toBeInTheDocument();
+    expect(screen.getByText('All settled up!')).toBeInTheDocument();
   });
 });

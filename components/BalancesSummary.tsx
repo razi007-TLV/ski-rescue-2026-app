@@ -1,23 +1,24 @@
 'use client';
 
-import { Balance } from '@/types';
-import { formatNIS } from '@/lib/utils';
+import { Balance, Currency } from '@/types';
+import { formatAmount } from '@/lib/utils';
 
 interface BalancesSummaryProps {
   balances: Balance[];
+  displayCurrency?: Currency;
 }
 
-export default function BalancesSummary({ balances }: BalancesSummaryProps) {
+export default function BalancesSummary({ balances, displayCurrency = 'NIS' }: BalancesSummaryProps) {
   return (
     <div className="mb-8">
       <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
         Current Balances
       </h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         {balances.map((balance) => (
           <div
             key={balance.member}
-            className={`p-6 rounded-lg border-2 ${
+            className={`p-3 sm:p-4 rounded-lg border-2 ${
               balance.net > 0
                 ? 'bg-green-50 border-green-300 dark:bg-green-900/20 dark:border-green-700'
                 : balance.net < 0
@@ -25,20 +26,20 @@ export default function BalancesSummary({ balances }: BalancesSummaryProps) {
                 : 'bg-gray-50 border-gray-300 dark:bg-gray-700/50 dark:border-gray-600'
             }`}
           >
-            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-3">
+            <h3 className="text-base sm:text-lg font-bold text-gray-800 dark:text-gray-200 mb-2">
               {balance.member}
             </h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">Paid:</span>
                 <span className="font-medium text-gray-800 dark:text-gray-200">
-                  {formatNIS(balance.paid)}
+                  {formatAmount(balance.paid, displayCurrency)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">Owes:</span>
                 <span className="font-medium text-gray-800 dark:text-gray-200">
-                  {formatNIS(balance.owes)}
+                  {formatAmount(balance.owes, displayCurrency)}
                 </span>
               </div>
               <div className="flex justify-between pt-2 border-t border-gray-300 dark:border-gray-600">
@@ -52,7 +53,7 @@ export default function BalancesSummary({ balances }: BalancesSummaryProps) {
                       : 'text-gray-600 dark:text-gray-400'
                   }`}
                 >
-                  {balance.net > 0 ? '+' : ''}{formatNIS(balance.net)}
+                  {balance.net > 0 ? '+' : ''}{formatAmount(balance.net, displayCurrency)}
                 </span>
               </div>
             </div>

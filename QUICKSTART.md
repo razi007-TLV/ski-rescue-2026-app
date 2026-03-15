@@ -66,23 +66,25 @@ npm start
 
 ## 🎯 Example Scenario
 
-**Scenario**: Bloch paid ₪300 for dinner, split equally
+**Scenario**: Bloch paid ₪400 for dinner, split equally
 
 1. Add expense:
    - Description: "Dinner at restaurant"
-   - Amount: 300
+   - Amount: 400
    - Currency: NIS
    - Paid by: Bloch
    - Split: Equal
 
 2. Result:
-   - Bloch: +₪200 (paid ₪300, owes ₪100)
+   - Bloch: +₪300 (paid ₪400, owes ₪100)
    - Adji: -₪100 (owes ₪100)
    - Razi: -₪100 (owes ₪100)
+   - Kalish: -₪100 (owes ₪100)
 
 3. Settlement suggestions:
    - Adji should pay Bloch ₪100
    - Razi should pay Bloch ₪100
+   - Kalish should pay Bloch ₪100
 
 ---
 

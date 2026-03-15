@@ -1,48 +1,58 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Settlement, Member, Currency } from '@/types';
 import { MEMBERS, CURRENCIES } from '@/config';
+import { sanitizeSettlementInput } from '@/lib/security';
 
 interface SettlementFormProps {
   onAddSettlement: (settlement: Settlement) => void;
+  defaults?: { from: Member; to: Member; amount: number } | null;
+  onClearDefaults?: () => void;
 }
 
-export default function SettlementForm({ onAddSettlement }: SettlementFormProps) {
+export default function SettlementForm({ onAddSettlement, defaults, onClearDefaults }: SettlementFormProps) {
   const [fromMember, setFromMember] = useState<Member>('Bloch');
   const [toMember, setToMember] = useState<Member>('Adji');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState<Currency>('NIS');
   const [note, setNote] = useState('');
+  const [hasAppliedDefaults, setHasAppliedDefaults] = useState(false);
+
+  useEffect(() => {
+    if (defaults && !hasAppliedDefaults) {
+      setFromMember(defaults.from);
+      setToMember(defaults.to);
+      setAmount(defaults.amount.toFixed(2));
+      setCurrency('NIS');
+      setHasAppliedDefaults(true);
+    }
+    if (!defaults) {
+      setHasAppliedDefaults(false);
+    }
+  }, [defaults, hasAppliedDefaults]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const amountNum = parseFloat(amount);
-    if (isNaN(amountNum) || amountNum <= 0) {
-      alert('Please enter a valid amount');
-      return;
-    }
 
-    if (fromMember === toMember) {
-      alert('From and To members must be different');
-      return;
-    }
-
-    const settlement: Settlement = {
-      id: Date.now().toString(),
-      date: new Date().toISOString(),
-      from_member: fromMember,
-      to_member: toMember,
-      amount: amountNum,
+    const result = sanitizeSettlementInput({
+      fromMember,
+      toMember,
+      amount,
       currency,
-      note: note || undefined,
-    };
+      note,
+    });
 
-    onAddSettlement(settlement);
+    if (!result.valid) {
+      alert(result.error);
+      return;
+    }
+
+    onAddSettlement(result.settlement);
     
     setAmount('');
     setNote('');
+    if (onClearDefaults) onClearDefaults();
   };
 
   return (
@@ -89,6 +99,8 @@ export default function SettlementForm({ onAddSettlement }: SettlementFormProps)
           <input
             type="number"
             step="0.01"
+            min="0.01"
+            max="1000000"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
@@ -120,15 +132,21 @@ export default function SettlementForm({ onAddSettlement }: SettlementFormProps)
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
+            maxLength={200}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
             placeholder="e.g., Cash payment"
           />
         </div>
       </div>
 
+      {fromMember === toMember && (
+        <p className="text-sm text-red-500 dark:text-red-400">From and To members must be different.</p>
+      )}
+
       <button
         type="submit"
-        className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+        disabled={fromMember === toMember}
+        className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors"
       >
         Record Settlement
       </button>

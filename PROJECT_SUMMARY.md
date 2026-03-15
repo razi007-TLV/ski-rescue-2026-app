@@ -10,7 +10,7 @@
 
 ### 2. **Core Types & Configuration** ✓
 Created comprehensive type definitions:
-- `Member`: Union type for Bloch, Adji, Razi
+- `Member`: Union type for Bloch, Adji, Razi, Kalish
 - `Currency`: NIS, USD, EUR support
 - `Expense`: Full expense tracking with splits
 - `Settlement`: Payment tracking between members

@@ -1,4 +1,4 @@
-export type Member = 'Bloch' | 'Adji' | 'Razi';
+export type Member = 'Bloch' | 'Adji' | 'Razi' | 'Kalish';
 
 export type Currency = 'NIS' | 'USD' | 'EUR';
 
